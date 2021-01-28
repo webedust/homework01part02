@@ -3,12 +3,221 @@
  */
 package homework01part02;
 
-public class App {
+import javafx.application.Application;
+import javafx.scene.Scene;
+import javafx.scene.control.*;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.VBox;
+import javafx.stage.Stage;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Vector;
+import Dustin.Common.*;
+
+public class App extends Application
+{
+    // Variables
+        // This stage
+        private Stage stage;
+        // ComboBox to set department of course
+        private ComboBox<String> deps;
+        // Fields containing info on courses
+        private TextField[] courseFields;
+        // Vector to store courses
+        private Vector<Course> courses = new Vector<>();
+
+
+
     public String getGreeting() {
         return "Hello World!";
     }
 
-    public static void main(String[] args) {
-        System.out.println(new App().getGreeting());
+    @Override
+    public void start(Stage stage) throws Exception
+    {
+        this.stage = stage;
+        stage.setTitle("Course View");
+
+        // Combo Box
+        deps = new ComboBox<>();
+        deps.getItems().add("Computer Science");
+        deps.getItems().add("Chemistry");
+        deps.getItems().add("Physics");
+        deps.getItems().add("Mathematics");
+        deps.getItems().add("Botany");
+        deps.getItems().add("Zoology");
+        // Set default value to CS
+        deps.setValue("Computer Science");
+
+        // Course Number
+        TextField courseNum = new TextField();
+        courseNum.setPromptText("Course #");
+
+        // Course name
+        TextField courseName = new TextField();
+        courseName.setPromptText("Course Name");
+
+        // # of Credits
+        TextField credits = new TextField();
+        credits.setPromptText("Credits");
+
+        // Add text fields to array
+        courseFields = new TextField[] {courseNum, courseName, credits};
+
+        // ListView for showing courses
+        ListView<String> courseList = new ListView<>();
+
+        // Display All Courses Button
+        Button displayAll = new Button("Display (All)");
+
+        // Display Dept. Button
+        Button displayDept = new Button("Display (Dept.)");
+
+        // Exit Button
+        Button exit = new Button("Exit");
+
+        // Add listeners
+        displayAll.setOnAction(val -> ButtonDisplayAll(courseList));
+        displayDept.setOnAction(val -> ButtonDisplayDept(courseList));
+        exit.setOnAction(val -> ButtonClose());
+
+        // Layout
+        HBox hbox = new HBox(displayAll, displayDept, exit);
+        VBox layout = new VBox(deps, courseNum, courseName, credits, courseList, hbox);
+
+        // Scene
+        Scene scene = new Scene(layout, 640, 480);
+
+        // Listen for input
+        scene.addEventFilter(KeyEvent.KEY_PRESSED, (key) ->
+        {
+            if (key.getCode() == KeyCode.ENTER)
+                OnSubmit();
+        });
+
+        stage.setScene(scene);
+
+        // Final
+        stage.show();
+    }
+
+    // Button functions
+    /** Close (Exit) Button is pressed. */
+    void ButtonClose()
+    {
+        // Show confirm box to user before closing
+        Alert a = new Alert(Alert.AlertType.CONFIRMATION);
+        a.showAndWait()
+                .filter(response -> response == ButtonType.OK)
+                .ifPresent(response -> stage.close());
+    }
+
+    /** Display All Button is pressed. */
+    void ButtonDisplayAll(ListView<String> out)
+    {
+        BaseDisplay(out);
+
+        for (Course course : courses)
+        {
+            out.getItems().add(course.toString());
+        }
+    }
+
+    /** Display for Department Button is pressed. */
+    void ButtonDisplayDept(ListView<String> out)
+    {
+        BaseDisplay(out);
+
+        for (Course course : courses)
+        {
+            // Add item to ListView if matches the selected dept. code
+            if (deps.getSelectionModel().getSelectedIndex() == course.getCodeIndex())
+                out.getItems().add(course.toString());
+        }
+    }
+
+    /** User submits the text fields. */
+    void OnSubmit()
+    {
+        // Toggles true if error found
+        boolean inputError = false;
+
+
+        for (TextField field : courseFields)
+        {
+            // Ensure fields are all filled
+            if (field.getText().isBlank())
+            {
+                Alert a = new Alert(Alert.AlertType.ERROR);
+                a.setContentText("All course information fields must be filled.");
+                a.show();
+                inputError = true;
+                break;
+            }
+        }
+
+        // Ensure appropriate values
+        // 0 = Number, 1 = Name, 2 = Credits
+        // Course SHOULD be numeric
+        // Name should NOT be numeric
+        // Credits SHOULD be numeric
+        if (!inputError && !Strings.ContainsDigit(courseFields[0].getText()))
+        {
+            Alert a = new Alert(Alert.AlertType.ERROR);
+            a.setContentText("Course # must be a number.");
+            a.show();
+            inputError = true;
+        }
+        if (!inputError && Strings.ContainsDigit(courseFields[1].getText()))
+        {
+            Alert a = new Alert(Alert.AlertType.ERROR);
+            a.setContentText("Course name should not contain numbers.");
+            a.show();
+            inputError = true;
+        }
+        if (!inputError && !Strings.ContainsDigit(courseFields[2].getText()))
+        {
+            Alert a = new Alert(Alert.AlertType.ERROR);
+            a.setContentText("Credits must be a number.");
+            a.show();
+            inputError = true;
+        }
+
+        // No user input errors.
+        if (!inputError)
+        {
+            // Create new course from input
+            Course course = new Course
+                    (
+                            courseFields[0].getText(),
+                            courseFields[1].getText(),
+                            Integer.parseInt(courseFields[2].getText()),
+                            Course.getAllCodes()[deps.getSelectionModel().getSelectedIndex()],
+                            deps.getSelectionModel().getSelectedIndex()
+                    );
+            // Add course to Vector
+            courses.add(course);
+
+            // Notify user course was successfully created
+            Alert a = new Alert(Alert.AlertType.INFORMATION);
+            a.setTitle("Course Created");
+            a.setContentText("Course created successfully.");
+            a.show();
+        }
+    }
+
+    /** Base "display" function. Should be called when Display Dept./Display All are called. */
+    void BaseDisplay(ListView<String> out)
+    {
+        // Clear list in case button is pressed again
+        out.getItems().clear();
+    }
+
+    public static void main(String[] args)
+    {
+        Application.launch(args);
     }
 }
